@@ -1,0 +1,61 @@
+# 构建输出
+build/
+build_*/
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# CMake缓存
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+install_manifest.txt
+
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/c_cpp_properties.json
+
+# 临时文件
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 依赖库 (如果使用包管理器)
+vcpkg_installed/
+conan/
+
+# 旧版本文件 (计划删除)
+src/
+include/
+third_party/
+web/
+build.bat
