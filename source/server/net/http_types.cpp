@@ -22,9 +22,11 @@ namespace miniserver::http
 std::string Request::GetHeader(const std::string& name) const
 {
     std::string lower_name = name;
-    std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
-                  [](unsigned char c) { return std::tolower(c); });
-    
+    std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),[](unsigned char c)
+    {
+        return static_cast<char>(std::tolower(c));
+    });
+        
     auto it = headers.find(lower_name);
     return (it != headers.end()) ? it->second : "";
 }
@@ -32,8 +34,10 @@ std::string Request::GetHeader(const std::string& name) const
 bool Request::HasHeader(const std::string& name) const
 {
     std::string lower_name = name;
-    std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
-                  [](unsigned char c) { return std::tolower(c); });
+    std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), [](unsigned char c)
+    {
+        return static_cast<char>(std::tolower(c));
+    });
     
     return headers.find(lower_name) != headers.end();
 }
@@ -86,8 +90,10 @@ std::string MethodToString(Method method)
 Method StringToMethod(const std::string& method_str)
 {
     std::string upper_method = method_str;
-    std::transform(upper_method.begin(), upper_method.end(), upper_method.begin(),
-                  [](unsigned char c) { return std::toupper(c); });
+    std::transform(upper_method.begin(), upper_method.end(), upper_method.begin(), [](unsigned char c)
+    {
+        return static_cast<char>(std::toupper(c));
+    });
     
     if (upper_method == "GET") return Method::GET;
     if (upper_method == "POST") return Method::POST;

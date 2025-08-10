@@ -1,27 +1,27 @@
-# Mini Server - 现代C++17 HTTP服务器
+# Mini Server - Modern C++17 HTTP Server
 
-一个专业级的C++17 HTTP服务器，采用模块化设计和现代C++最佳实践，支持动态服务注册和跨平台部署。
+A professional-grade C++17 HTTP server with modular design and modern C++ best practices, supporting dynamic service registration and cross-platform deployment.
 
-## 🌟 核心特性
+## 🌟 Core Features
 
-- � **现代C++17**: 使用最新C++特性，RAII、智能指针、移动语义
-- 🌐 **跨平台支持**: Windows、Linux、macOS全平台兼容
-- 🔒 **线程安全**: 多线程并发处理，读写锁优化性能
-- 📝 **专业日志**: 分级日志系统，支持彩色输出和文件记录
-- 🎯 **服务注册**: 动态服务注册和管理，支持热插拔
-- 🛡️ **错误处理**: 完善的异常安全和错误恢复机制
-- � **API文档**: Doxygen风格的完整API文档
-- � **高性能**: 零依赖设计，纯C++标准库实现
+- ⚡ **Modern C++17**: Latest C++ features, RAII, smart pointers, move semantics
+- 🌐 **Cross-platform**: Full compatibility with Windows, Linux, macOS
+- 🔒 **Thread Safe**: Multi-threaded concurrent processing with optimized read-write locks
+- 📝 **Professional Logging**: Hierarchical logging system with color output and file recording
+- 🎯 **Service Registration**: Dynamic service registration and management with hot-swapping
+- 🛡️ **Error Handling**: Comprehensive exception safety and error recovery mechanisms
+- 📚 **API Documentation**: Complete API documentation in Doxygen style
+- ⚡ **High Performance**: Zero-dependency design with pure C++ standard library implementation
 
-## 🏗️ 项目架构
+## 🏗️ Project Architecture
 
-### 模块化设计
+### Modular Design
 ```
-miniserver::core      - 核心服务器和路由逻辑
-miniserver::http      - HTTP协议处理和解析
-miniserver::network   - 跨平台网络抽象层  
-miniserver::services  - 动态服务注册系统
-miniserver::utils     - 日志和工具模块
+miniserver::core      - Core server and routing logic
+miniserver::http      - HTTP protocol handling and parsing
+miniserver::network   - Cross-platform network abstraction layer
+miniserver::services  - Dynamic service registration system
+miniserver::utils     - Logging and utility modules
 ```
 
 ### 技术栈
