@@ -8,7 +8,7 @@
 
 #include "service_registry.hpp"
 #include "server.hpp"
-// #include "request_router.hpp"  // Request router is currently disabled
+#include "request_router.hpp"
 #include "../net/http_types.hpp"    // Ensure proper namespace resolution
 #include "../net/socket_server.hpp"
 #include "../net/http_parser.hpp"
@@ -29,7 +29,7 @@ namespace miniserver::core
     Server::Server(int port)
         : m_port(port)
         , m_service_registry(&services::ServiceRegistry::GetInstance())
-        , m_request_router(nullptr)  // Request router is currently disabled
+        , m_request_router(std::make_unique<RequestRouter>(m_service_registry))
         , m_socket_server(std::make_unique<network::SocketServer>())
     {
         if (port <= 0 || port > 65535)
@@ -251,6 +251,7 @@ namespace miniserver::core
         try
         {
             LOG_DEBUG_FMT("Server", "Received request: {} bytes", request_data.size());
+            
             // Parse HTTP request
             auto request_opt = http::HttpParser::ParseRequest(request_data);
             if (!request_opt)
@@ -261,54 +262,14 @@ namespace miniserver::core
                 error_response.SetText("Bad Request");
                 return http::HttpParser::SerializeResponse(error_response);
             }
+            
             const auto& request = *request_opt;
             LOG_DEBUG_FMT("Server", "Processing {} request to {}",
                          http::MethodToString(request.method), request.path);
-            http::Response response;
-            // Handle CORS preflight requests
-            if (request.method == http::Method::OPTIONS)
-            {
-                response.status = http::StatusCode::OK;
-                response.headers["Access-Control-Allow-Origin"] = "*";
-                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
-                response.headers["Access-Control-Max-Age"] = "86400";
-                response.body = "";
-            }
-            // Health check endpoint
-            else if (request.path == "/ping" && request.method == http::Method::GET) {
-                response.status = http::StatusCode::OK;
-                response.SetJson("{\"status\":\"ok\",\"message\":\"pong\"}");
-            }
-            // List services endpoint
-            else if (request.path == "/services" && request.method == http::Method::GET)
-            {
-                response = m_service_registry->GetServicesInfo();
-            }
-            // Service invocation endpoint /service/<name>
-            else if (request.path.substr(0, 9) == "/service/" && request.method == http::Method::POST)
-            {
-                std::string service_name = request.path.substr(9); // Remove "/service/"
-                if (!service_name.empty())
-                {
-                    response = m_service_registry->HandleServiceRequest(request, service_name);
-                }
-                else
-                {
-                    response.status = http::StatusCode::BadRequest;
-                    response.SetJson("{\"error\":\"Service name is required\"}");
-                }
-            }
-            // Default response for unknown endpoints
-            else
-            {
-                response.status = http::StatusCode::NotFound;
-                response.SetJson("{\"error\":\"Endpoint not found\"}");
-            }
-            // Add CORS headers to all responses
-            response.headers["Access-Control-Allow-Origin"] = "*";
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+            
+            // Use RequestRouter to handle the request
+            http::Response response = m_request_router->RouteRequest(request);
+            
             // Return serialized response
             return http::HttpParser::SerializeResponse(response);
         }

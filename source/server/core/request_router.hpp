@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include "../net/http_types.hpp"
-#include <memory>
+#include "net/http_types.hpp"
 
 namespace miniserver::services
 {
@@ -18,9 +17,6 @@ namespace miniserver::services
 
 namespace miniserver::core
 {
-    // Aliases for brevity
-    namespace http = miniserver::http;
-    namespace services = miniserver::services;
     /**
      * @brief RequestRouter routes HTTP requests to appropriate handlers
      */
@@ -31,7 +27,7 @@ namespace miniserver::core
          * @brief Constructor
          * @param serviceRegistry Pointer to ServiceRegistry
          */
-        explicit RequestRouter(miniserver::services::ServiceRegistry* serviceRegistry);
+        explicit RequestRouter(services::ServiceRegistry* serviceRegistry);
         /**
          * @brief Destructor
          */
@@ -45,8 +41,9 @@ namespace miniserver::core
          * @return HTTP response
          */
         http::Response RouteRequest(const http::Request& request);
+
     private:
-        miniserver::services::ServiceRegistry* service_registry_; ///< Service registry
+        services::ServiceRegistry* m_service_registry; ///< Service registry
         /**
          * @brief Handle OPTIONS preflight requests
          * @param request HTTP request
@@ -84,5 +81,5 @@ namespace miniserver::core
          */
         std::string GetCurrentTimestamp();
     };
-} // namespace miniserver::core
+} // namespace core
 

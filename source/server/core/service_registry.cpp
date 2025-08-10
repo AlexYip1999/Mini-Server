@@ -129,13 +129,13 @@ namespace miniserver::services
         const http::Request& request,
         const std::string& serviceName)
     {
-        auto serviceOpt = GetService(serviceName);
-        if (!serviceOpt)
+        auto service_opt = GetService(serviceName);
+        if (!service_opt)
         {
             LOG_WARN("ServiceRegistry", "Requested non-existent service: " + serviceName);
             return CreateErrorResponse(http::StatusCode::NotFound, "Service not found: " + serviceName);
         }
-        const auto& service = *serviceOpt;
+        const auto& service = *service_opt;
         if (!service.enabled)
         {
             LOG_WARN("ServiceRegistry", "Requested disabled service: " + serviceName);
