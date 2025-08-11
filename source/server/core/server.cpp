@@ -9,10 +9,10 @@
 #include "service_registry.hpp"
 #include "server.hpp"
 #include "request_router.hpp"
-#include "../net/http_types.hpp"    // Ensure proper namespace resolution
-#include "../net/socket_server.hpp"
-#include "../net/http_parser.hpp"
-#include "../utils/logger.hpp"
+#include "net/http_types.hpp"    // Ensure proper namespace resolution
+#include "net/socket_server.hpp"
+#include "net/http_parser.hpp"
+#include "utils/logger.hpp"
 
 #include <stdexcept>
 #include <algorithm>

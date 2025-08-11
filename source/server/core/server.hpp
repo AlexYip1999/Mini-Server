@@ -10,8 +10,8 @@
 
 #include "service_registry.hpp"
 #include "request_router.hpp"
-#include "../net/socket_server.hpp"
-#include "../net/http_types.hpp"
+#include "net/socket_server.hpp"
+#include "net/http_types.hpp"
 
 #include <string>
 #include <thread>
