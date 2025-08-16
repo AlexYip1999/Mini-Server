@@ -51,11 +51,14 @@ namespace miniserver::services
     class ServiceRegistry
     {
     public:
-        /**
-         * @brief Get singleton instance
-         * @return ServiceRegistry singleton reference
-         */
-        static ServiceRegistry& GetInstance();
+        ServiceRegistry();
+        ~ServiceRegistry();
+
+        ServiceRegistry(const ServiceRegistry&) = delete;
+        ServiceRegistry& operator=(const ServiceRegistry&) = delete;
+        ServiceRegistry(ServiceRegistry&&) = delete;
+        ServiceRegistry& operator=(ServiceRegistry&&) = delete;
+
         /**
          * @brief Register service
          * @param name Service name (must be unique)
@@ -121,19 +124,6 @@ namespace miniserver::services
          */
         bool DisableService(const std::string& name);
     private:
-        /**
-         * @brief Private constructor (singleton pattern)
-         */
-        ServiceRegistry();
-        /**
-         * @brief Private destructor
-         */
-        ~ServiceRegistry();
-        // Disable copy and move
-        ServiceRegistry(const ServiceRegistry&) = delete;
-        ServiceRegistry& operator=(const ServiceRegistry&) = delete;
-        ServiceRegistry(ServiceRegistry&&) = delete;
-        ServiceRegistry& operator=(ServiceRegistry&&) = delete;
         /**
          * @brief Create error response
          * @param status HTTP status code

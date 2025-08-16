@@ -16,12 +16,6 @@ namespace miniserver::services
     // Alias for HTTP namespace
     namespace http = miniserver::http;
 
-    ServiceRegistry& ServiceRegistry::GetInstance()
-    {
-        static ServiceRegistry instance;
-        return instance;
-    }
-
     ServiceRegistry::ServiceRegistry()
     {
         LOG_INFO("ServiceRegistry", "Initialized");

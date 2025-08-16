@@ -16,11 +16,12 @@
 namespace miniserver::utils
 {
     // Log level enumeration
-    enum class LogLevel {
+    enum class LogLevel{
         Debug = 0,   ///< Debug information
         Info = 1,    ///< General information
         Warning = 2, ///< Warning information
-        Error = 3    ///< Error information
+        Error = 3,    ///< Error information
+        NumLevels
     };
 
     using LogLevelAlias = LogLevel; // Alias for conciseness
@@ -169,6 +170,7 @@ namespace miniserver::utils
         bool m_enable_colors;                ///< Color output enabled
         std::ofstream m_log_file;            ///< Log file stream
     };
+    
     /**
      * @brief Convenience function: log debug message
      * @param component Component name
@@ -197,6 +199,7 @@ namespace miniserver::utils
     namespace detail
     {
         inline void format_inplace(std::string&) {}
+        
         template<typename T, typename... Rest>
         void format_inplace(std::string& fmt, T&& v, Rest&&... rest)
         {
@@ -206,7 +209,11 @@ namespace miniserver::utils
                 std::ostringstream oss; oss << std::forward<T>(v);
                 fmt.replace(pos, 2, oss.str());
             }
-            if constexpr (sizeof...(rest) > 0) format_inplace(fmt, std::forward<Rest>(rest)...);
+
+            if constexpr (sizeof...(rest) > 0)
+            {
+                format_inplace(fmt, std::forward<Rest>(rest)...);
+            }
         }
         template<typename... Args>
         std::string format(std::string fmt, Args&&... args)

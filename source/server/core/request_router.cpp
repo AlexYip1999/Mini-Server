@@ -21,9 +21,9 @@ namespace miniserver::core
     /**
      * @brief Constructor
      * @param serviceRegistry Pointer to ServiceRegistry
-     * @param webRoot Web root directory for static files
+     * @param web_root Web root directory for static files
      */
-    RequestRouter::RequestRouter(services::ServiceRegistry* serviceRegistry, const std::string& webRoot)
+    RequestRouter::RequestRouter(services::ServiceRegistry* serviceRegistry, const std::string& web_root)
         : m_service_registry(serviceRegistry)
     {
         if (!m_service_registry)
@@ -32,14 +32,14 @@ namespace miniserver::core
         }
         
         // Initialize static file handler if web root is provided
-        if (!webRoot.empty() && std::filesystem::exists(webRoot))
+        if (!web_root.empty() && std::filesystem::exists(web_root))
         {
-            m_static_file_handler = std::make_unique<StaticFileHandler>(webRoot);
-            LOG_INFO_FMT("RequestRouter", "Static file handler initialized with root: {}", webRoot);
+            m_static_file_handler = std::make_unique<StaticFileHandler>(web_root);
+            LOG_INFO_FMT("RequestRouter", "Static file handler initialized with root: {}", web_root);
         }
-        else if (!webRoot.empty())
+        else if (!web_root.empty())
         {
-            LOG_WARN_FMT("RequestRouter", "Web root directory does not exist: {}", webRoot);
+            LOG_WARN_FMT("RequestRouter", "Web root directory does not exist: {}", web_root);
         }
         
         LOG_INFO("RequestRouter", "RequestRouter initialized");
@@ -111,7 +111,6 @@ namespace miniserver::core
     http::Response RequestRouter::HandleGetRequest(const http::Request& request)
     {
         const std::string& path = request.path;
-
         // First check if it's a registered service (remove leading slash)
         std::string service_name = path.substr(1); // Remove leading "/"
         if (!service_name.empty() && m_service_registry->HasService(service_name))

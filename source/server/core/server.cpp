@@ -6,7 +6,6 @@
  * @date 2024
  */
 
-#include "service_registry.hpp"
 #include "server.hpp"
 #include "request_router.hpp"
 #include "net/http_types.hpp"    // Ensure proper namespace resolution
@@ -27,20 +26,20 @@ namespace miniserver::core
     /**
      * @brief Construct a new Server object
      * @param port Port number to bind the server
-     * @param webRoot Web root directory for static files
+     * @param web_root Web root directory for static files
      * @throws std::invalid_argument if port is out of range
      */
-    Server::Server(int port, const std::string& webRoot)
+    Server::Server(int port, const std::string& web_root)
         : m_port(port)
-        , m_service_registry(&services::ServiceRegistry::GetInstance())
-        , m_request_router(std::make_unique<RequestRouter>(m_service_registry, webRoot))
+        , m_service_registry(std::make_unique<services::ServiceRegistry>())
+        , m_request_router(std::make_unique<RequestRouter>(m_service_registry.get(), web_root))
         , m_socket_server(std::make_unique<network::SocketServer>())
     {
         if (port <= 0 || port > 65535)
         {
             throw std::invalid_argument("Port must be between 1 and 65535");
         }
-        LOG_INFO_FMT(Server, "Server created on port {} with web root: {}", m_port, webRoot.empty() ? "none" : webRoot);
+        LOG_INFO_FMT(Server, "Server created on port {} with web root: {}", m_port, web_root.empty() ? "none" : web_root);
     }
 
     /**

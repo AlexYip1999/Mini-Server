@@ -20,14 +20,10 @@
 #include <functional>
 #include <vector>
 
-namespace miniserver::services
-{
-    class ServiceRegistry;
-    struct ServiceInfo;
-}
-
 namespace miniserver::core
 {
+    using services::ServiceRegistry;
+
     /**
      * @brief Core HTTP Server
      *
@@ -128,12 +124,10 @@ namespace miniserver::core
          */
         std::string FormatUptime(long seconds);
 
-
-
-        int m_port;                                                       ///< Server port
-        std::atomic<bool> m_running;                                      ///< Running state flag
+        int m_port;                                                        ///< Server port
+        std::atomic<bool> m_running;                                       ///< Running state flag
         std::thread m_server_thread;                                       ///< Server thread
-        services::ServiceRegistry* m_service_registry;                     ///< Service registry (singleton)
+        std::unique_ptr<ServiceRegistry> m_service_registry;               ///< Service registry (singleton)
         std::unique_ptr<RequestRouter> m_request_router;                   ///< Request router
         std::unique_ptr<network::SocketServer> m_socket_server;            ///< Network socket server
     };

@@ -48,7 +48,7 @@ http::Response StaticFileHandler::HandleRequest(const http::Request& request)
         {
             path = "/index.html";
         }
-        
+
         // Security check
         if (!IsSafePath(path))
         {
