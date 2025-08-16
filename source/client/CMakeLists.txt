@@ -3,7 +3,7 @@
 # =============================================================================
 
 # Client project configuration
-set(CLIENT_TARGET_NAME test_client)
+set(CLIENT_TARGET_NAME test-client)
 
 # =============================================================================
 # Client Source Files

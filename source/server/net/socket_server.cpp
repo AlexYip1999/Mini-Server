@@ -33,14 +33,14 @@ SocketServer::SocketServer()
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result != 0)
     {
-    utils::Logger::GetInstance().Error(
-            "SocketServer", "WSAStartup failed: " + std::to_string(result));
+    LOG_ERROR(
+            SocketServer, "WSAStartup failed: " + std::to_string(result));
         throw std::runtime_error("Unable to initialize Winsock");
     }
 #endif
 
-    utils::Logger::GetInstance().Error(
-        "SocketServer", "Socket server initialized");
+    LOG_ERROR(
+        SocketServer, "Socket server initialized");
 }
 
 SocketServer::~SocketServer()
@@ -49,14 +49,14 @@ SocketServer::~SocketServer()
 #ifdef _WIN32
     WSACleanup();
 #endif
-    utils::Logger::GetInstance().Info("SocketServer", "Socket server destroyed");
+    LOG_INFO(SocketServer, "Socket server destroyed");
 }
 
 bool SocketServer::Start(const std::string& host, int port)
 {
     if (IsRunning())
     {
-        utils::Logger::GetInstance().Warning("SocketServer", 
+        LOG_WARN(SocketServer, 
             "Server is already running");
         return false;
     }
@@ -65,7 +65,7 @@ bool SocketServer::Start(const std::string& host, int port)
     m_server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (m_server_socket == INVALID_SOCKET)
     {
-        utils::Logger::GetInstance().Error("SocketServer",
+        LOG_ERROR(SocketServer,
             "Failed to create socket: " + GetLastErrorString());
         return false;
     }
@@ -92,8 +92,8 @@ bool SocketServer::Start(const std::string& host, int port)
     {
         if (inet_pton(AF_INET, host.c_str(), &server_addr.sin_addr) <= 0)
         {
-            utils::Logger::GetInstance().Error(
-                "SocketServer", "Invalid IP address: " + host);
+            LOG_ERROR(
+                SocketServer, "Invalid IP address: " + host);
             CloseSocket(m_server_socket);
             m_server_socket = INVALID_SOCKET;
             return false;
@@ -103,8 +103,8 @@ bool SocketServer::Start(const std::string& host, int port)
     if (bind(m_server_socket, reinterpret_cast<struct sockaddr*>(&server_addr),
              sizeof(server_addr)) == SOCKET_ERROR)
     {
-        utils::Logger::GetInstance().Error(
-            "SocketServer", "Failed to bind address: " + GetLastErrorString());
+        LOG_ERROR(
+            SocketServer, "Failed to bind address: " + GetLastErrorString());
         CloseSocket(m_server_socket);
         m_server_socket = INVALID_SOCKET;
         return false;
@@ -113,8 +113,8 @@ bool SocketServer::Start(const std::string& host, int port)
     // Start listening
     if (listen(m_server_socket, SOMAXCONN) == SOCKET_ERROR)
     {
-        utils::Logger::GetInstance().Error(
-            "SocketServer", "Listen failed: " + GetLastErrorString());
+        LOG_ERROR(
+            SocketServer, "Listen failed: " + GetLastErrorString());
         CloseSocket(m_server_socket);
         m_server_socket = INVALID_SOCKET;
         return false;
@@ -125,8 +125,7 @@ bool SocketServer::Start(const std::string& host, int port)
 
     m_is_running.store(true);
 
-    utils::Logger::GetInstance().Error(
-        "SocketServer", "Server started successfully at " + host + ":" + std::to_string(port));
+    LOG_INFO(SocketServer, "Server started successfully at " + host + ":" + std::to_string(port));
     return true;
 }
 
@@ -145,21 +144,20 @@ void SocketServer::Stop()
         m_server_socket = INVALID_SOCKET;
     }
 
-    utils::Logger::GetInstance().Error(
-        "SocketServer", "Server stopped");
+    LOG_ERROR(
+        SocketServer, "Server stopped");
 }
 
 void SocketServer::Run(RequestHandler handler)
 {
     if (!IsRunning() || !handler)
     {
-        utils::Logger::GetInstance().Error("SocketServer", 
+        LOG_ERROR(SocketServer, 
             "Server not running or handler is null");
         return;
     }
 
-    utils::Logger::GetInstance().Error(
-        "SocketServer", 
+    LOG_ERROR(SocketServer, 
         "Waiting for client connections...");
 
     while (IsRunning())
@@ -176,7 +174,7 @@ void SocketServer::Run(RequestHandler handler)
         {
             if (IsRunning())
             {
-                utils::Logger::GetInstance().Error("SocketServer", 
+                LOG_ERROR(SocketServer, 
                     "Accept failed: " + GetLastErrorString());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -188,7 +186,7 @@ void SocketServer::Run(RequestHandler handler)
         char client_ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
 
-        utils::Logger::GetInstance().Error("SocketServer", 
+        LOG_INFO(SocketServer, 
             "Accepted connection from " + std::string(client_ip));
 
         // Handle client in a new thread
@@ -227,15 +225,15 @@ void SocketServer::HandleClient(SOCKET client_socket,
         const std::string request_data = ReceiveData(client_socket);
         if (request_data.empty())
         {
-            utils::Logger::GetInstance().Error(
-                "SocketServer", "No data received from " + client_ip);
+            LOG_ERROR(SocketServer, 
+                "No data received from " + client_ip);
 
             CloseSocket(client_socket);
             return;
         }
 
-        utils::Logger::GetInstance().Error(
-            "SocketServer", "Received " + std::to_string(request_data.size()) +
+        LOG_INFO(SocketServer, 
+            "Received " + std::to_string(request_data.size()) +
             " bytes from " + client_ip);
 
         // Process request
@@ -244,14 +242,14 @@ void SocketServer::HandleClient(SOCKET client_socket,
         // Send response
         if (!SendData(client_socket, response))
         {
-            utils::Logger::GetInstance().Error(
-                "SocketServer", "Failed to send response to " + client_ip);
+            LOG_ERROR(SocketServer, 
+                "Failed to send response to " + client_ip);
         }
     }
     catch (const std::exception& e)
     {
-        utils::Logger::GetInstance().Error(
-            "SocketServer", "Exception while handling client " + client_ip + ": " + e.what());
+        LOG_ERROR(SocketServer, 
+            "Exception while handling client " + client_ip + ": " + e.what());
     }
 
     CloseSocket(client_socket);
@@ -273,13 +271,13 @@ std::string SocketServer::ReceiveData(SOCKET client_socket)
         {
             if (received == 0)
             {
-                utils::Logger::GetInstance().Error(
-                    "SocketServer", "Client closed connection");
+                LOG_ERROR(
+                    SocketServer, "Client closed connection");
             }
             else
             {
-                utils::Logger::GetInstance().Error(
-                    "SocketServer", "Error receiving data: " + GetLastErrorString());
+                LOG_ERROR(
+                    SocketServer, "Error receiving data: " + GetLastErrorString());
             }
             break;
         }
@@ -337,8 +335,8 @@ std::string SocketServer::ReceiveData(SOCKET client_socket)
         // Size guard (1MB)
         if (total_received > 1 * 1024 * 1024)
         {
-            utils::Logger::GetInstance().Error(
-                "SocketServer", "Received data too large, forcibly closing");
+            LOG_ERROR(
+                SocketServer, "Received data too large, forcibly closing");
             break;
         }
     }
@@ -357,8 +355,8 @@ bool SocketServer::SendData(SOCKET client_socket, const std::string& data)
                         static_cast<int>(data_size - total_sent), 0);
         if (sent == SOCKET_ERROR)
         {
-            utils::Logger::GetInstance().Error(
-                "SocketServer", "Send failed: " + GetLastErrorString());
+            LOG_ERROR(
+                SocketServer, "Send failed: " + GetLastErrorString());
             return false;
         }
         total_sent += sent;
@@ -372,8 +370,8 @@ bool SocketServer::SetSocketOptions()
     if (setsockopt(m_server_socket, SOL_SOCKET, SO_REUSEADDR,
                    reinterpret_cast<const char*>(&reuse), sizeof(reuse)) == SOCKET_ERROR)
     {
-        utils::Logger::GetInstance().Error(
-            "SocketServer", "Failed to set SO_REUSEADDR: " + GetLastErrorString());
+        LOG_ERROR(
+            SocketServer, "Failed to set SO_REUSEADDR: " + GetLastErrorString());
         return false;
     }
 #ifdef _WIN32

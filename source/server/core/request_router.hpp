@@ -9,6 +9,8 @@
 #pragma once
 
 #include "net/http_types.hpp"
+#include "static_file_handler.hpp"
+#include <memory>
 
 namespace miniserver::services
 {
@@ -26,8 +28,9 @@ namespace miniserver::core
         /**
          * @brief Constructor
          * @param serviceRegistry Pointer to ServiceRegistry
+         * @param webRoot Web root directory for static files (optional)
          */
-        explicit RequestRouter(services::ServiceRegistry* serviceRegistry);
+        RequestRouter(services::ServiceRegistry* serviceRegistry, const std::string& webRoot = "");
         /**
          * @brief Destructor
          */
@@ -44,18 +47,13 @@ namespace miniserver::core
 
     private:
         services::ServiceRegistry* m_service_registry; ///< Service registry
+        std::unique_ptr<StaticFileHandler> m_static_file_handler; ///< Static file handler
         /**
          * @brief Handle OPTIONS preflight requests
          * @param request HTTP request
          * @return HTTP response
          */
         http::Response HandleOptionsRequest(const http::Request& request);
-        /**
-         * @brief Handle health check requests (GET /health)
-         * @param request HTTP request
-         * @return HTTP response
-         */
-        http::Response HandleHealthCheck(const http::Request& request);
         /**
          * @brief Handle root requests (GET /)
          * @param request HTTP request
@@ -80,6 +78,35 @@ namespace miniserver::core
          * @return Current timestamp string
          */
         std::string GetCurrentTimestamp();
+        /**
+         * @brief Internal routing logic without exception handling
+         * @param request HTTP request
+         * @return HTTP response
+         */
+        http::Response RouteRequestInternal(const http::Request& request);
+        /**
+         * @brief Handle GET requests
+         * @param request HTTP request
+         * @return HTTP response
+         */
+        http::Response HandleGetRequest(const http::Request& request);
+        /**
+         * @brief Handle POST requests
+         * @param request HTTP request
+         * @return HTTP response
+         */
+        http::Response HandlePostRequest(const http::Request& request);
+        /**
+         * @brief Add CORS headers to response
+         * @param response HTTP response to modify
+         */
+        void AddCorsHeaders(http::Response& response);
+        /**
+         * @brief Format uptime seconds into human readable string
+         * @param seconds Uptime in seconds
+         * @return Formatted uptime string
+         */
+        std::string FormatUptime(long seconds);
     };
 } // namespace core
 

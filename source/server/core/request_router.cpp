@@ -8,10 +8,12 @@
 
 #include "request_router.hpp"
 #include "service_registry.hpp"
+#include "static_file_handler.hpp"
 #include "utils/logger.hpp"
 #include <sstream>
 #include <iomanip>
 #include <chrono>
+#include <filesystem>
 
 namespace miniserver::core
 {
@@ -19,14 +21,27 @@ namespace miniserver::core
     /**
      * @brief Constructor
      * @param serviceRegistry Pointer to ServiceRegistry
+     * @param webRoot Web root directory for static files
      */
-    RequestRouter::RequestRouter(services::ServiceRegistry* serviceRegistry)
+    RequestRouter::RequestRouter(services::ServiceRegistry* serviceRegistry, const std::string& webRoot)
         : m_service_registry(serviceRegistry)
     {
         if (!m_service_registry)
         {
             throw std::invalid_argument("ServiceRegistry cannot be null");
         }
+        
+        // Initialize static file handler if web root is provided
+        if (!webRoot.empty() && std::filesystem::exists(webRoot))
+        {
+            m_static_file_handler = std::make_unique<StaticFileHandler>(webRoot);
+            LOG_INFO_FMT("RequestRouter", "Static file handler initialized with root: {}", webRoot);
+        }
+        else if (!webRoot.empty())
+        {
+            LOG_WARN_FMT("RequestRouter", "Web root directory does not exist: {}", webRoot);
+        }
+        
         LOG_INFO("RequestRouter", "RequestRouter initialized");
     }
 
@@ -44,52 +59,7 @@ namespace miniserver::core
 
         try
         {
-            // Handle CORS preflight requests
-            if (request.method == http::Method::OPTIONS)
-            {
-                response = HandleOptionsRequest(request);
-            }
-            // Health check endpoint
-            else if (request.path == "/ping" && request.method == http::Method::GET)
-            {
-                response = HandleHealthCheck(request);
-            }
-            // Root endpoint
-            else if (request.path == "/" && request.method == http::Method::GET)
-            {
-                response = HandleRootRequest(request);
-            }
-            // List services endpoint
-            else if (request.path == "/services" && request.method == http::Method::GET)
-            {
-                response = m_service_registry->GetServicesInfo();
-            }
-            // Service invocation endpoint /service/<name>
-            else if (request.path.substr(0, 9) == "/service/" && request.method == http::Method::POST)
-            {
-                std::string service_name = ExtractServiceName(request.path);
-                if (!service_name.empty())
-                {
-                    response = m_service_registry->HandleServiceRequest(request, service_name);
-                }
-                else
-                {
-                    response = CreateErrorResponse(http::StatusCode::BadRequest, "Service name is required");
-                }
-            }
-            // Default response for unknown endpoints
-            else
-            {
-                response = CreateErrorResponse(http::StatusCode::NotFound, "Endpoint not found");
-            }
-
-            // Add CORS headers to all responses
-            response.headers["Access-Control-Allow-Origin"] = "*";
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
-
-            LOG_DEBUG_FMT("RequestRouter", "Request routed successfully, response status: {}",
-                         static_cast<int>(response.status));
+            response = RouteRequestInternal(request);
         }
         catch (const std::exception& e)
         {
@@ -97,7 +67,113 @@ namespace miniserver::core
             response = CreateErrorResponse(http::StatusCode::InternalServerError, "Internal Server Error");
         }
 
+        // Add CORS headers to all responses
+        AddCorsHeaders(response);
+
+        LOG_DEBUG_FMT("RequestRouter", "Request routed successfully, response status: {}",
+                     static_cast<int>(response.status));
+
         return response;
+    }
+
+    /**
+     * @brief Internal routing logic without exception handling
+     * @param request HTTP request
+     * @return HTTP response
+     */
+    http::Response RequestRouter::RouteRequestInternal(const http::Request& request)
+    {
+        // 1. Handle CORS preflight requests (highest priority)
+        if (request.method == http::Method::OPTIONS)
+        {
+            return HandleOptionsRequest(request);
+        }
+
+        // 2. Handle API endpoints
+        if (request.method == http::Method::GET)
+        {
+            return HandleGetRequest(request);
+        }
+        else if (request.method == http::Method::POST)
+        {
+            return HandlePostRequest(request);
+        }
+
+        // 3. Method not allowed for other HTTP methods
+        return CreateErrorResponse(http::StatusCode::MethodNotAllowed, "Method not allowed");
+    }
+
+    /**
+     * @brief Handle GET requests
+     * @param request HTTP request
+     * @return HTTP response
+     */
+    http::Response RequestRouter::HandleGetRequest(const http::Request& request)
+    {
+        const std::string& path = request.path;
+
+        // First check if it's a registered service (remove leading slash)
+        std::string service_name = path.substr(1); // Remove leading "/"
+        if (!service_name.empty() && m_service_registry->HasService(service_name))
+        {
+            return m_service_registry->HandleServiceRequest(request, service_name);
+        }
+
+        // Check for legacy /services endpoint
+        if (path == "/services")
+        {
+            return m_service_registry->GetServicesInfo();
+        }
+
+        // Static file serving (if available)
+        if (m_static_file_handler)
+        {
+            return m_static_file_handler->HandleRequest(request);
+        }
+
+        // Fallback for root endpoint (if no static file handler)
+        if (path == "/")
+        {
+            return HandleRootRequest(request);
+        }
+
+        // Resource not found
+        return CreateErrorResponse(http::StatusCode::NotFound, "Resource not found");
+    }
+
+    /**
+     * @brief Handle POST requests
+     * @param request HTTP request
+     * @return HTTP response
+     */
+    http::Response RequestRouter::HandlePostRequest(const http::Request& request)
+    {
+        const std::string& path = request.path;
+
+        // Service invocation endpoint
+        if (path.length() > 9 && path.substr(0, 9) == "/service/")
+        {
+            std::string service_name = ExtractServiceName(path);
+            if (service_name.empty())
+            {
+                return CreateErrorResponse(http::StatusCode::BadRequest, "Service name is required");
+            }
+            return m_service_registry->HandleServiceRequest(request, service_name);
+        }
+
+        // No POST endpoints match
+        return CreateErrorResponse(http::StatusCode::NotFound, "Endpoint not found");
+    }
+
+    /**
+     * @brief Add CORS headers to response
+     * @param response HTTP response to modify
+     */
+    void RequestRouter::AddCorsHeaders(http::Response& response)
+    {
+        response.headers["Access-Control-Allow-Origin"] = "*";
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
     }
 
     /**
@@ -118,33 +194,6 @@ namespace miniserver::core
         response.body = "";
 
         LOG_DEBUG("RequestRouter", "Handled OPTIONS preflight request");
-        return response;
-    }
-
-    /**
-     * @brief Handle health check requests (GET /ping)
-     * @param request HTTP request
-     * @return HTTP response
-     */
-    http::Response RequestRouter::HandleHealthCheck(const http::Request& request)
-    {
-        (void)request; // Suppress unused parameter warning
-
-        http::Response response;
-        response.status = http::StatusCode::OK;
-        
-        // Create health check JSON response
-        std::ostringstream json;
-        json << "{"
-             << "\"status\":\"ok\","
-             << "\"message\":\"pong\","
-             << "\"timestamp\":\"" << GetCurrentTimestamp() << "\","
-             << "\"services\":" << m_service_registry->GetServiceNames().size()
-             << "}";
-        
-        response.SetJson(json.str());
-
-        LOG_DEBUG("RequestRouter", "Handled health check request");
         return response;
     }
 

@@ -3,11 +3,6 @@
  * @brief HTTP协议类型实现
  * @author Mini Server Team
  * @version 1.0.0
-/**
- * @file http_types.cpp
- * @brief HTTP type definitions implementation
- * @author Mini Server Team
- * @version 1.0.0
  * @date 2024
  */
 // Include definitions and utilities

@@ -3,7 +3,7 @@
 # =============================================================================
 
 # Server project name
-set(SERVER_TARGET_NAME MiniServer)
+set(SERVER_TARGET_NAME mini-server)
 
 # =============================================================================
 # Server Target

@@ -14,9 +14,12 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
+#include <filesystem>
+
+using namespace miniserver;
 
 // Global server instance pointer
-std::unique_ptr<miniserver::core::Server> g_server;
+std::unique_ptr<core::Server> g_server;
 
 /**
  * @brief Signal handler for graceful shutdown
@@ -36,7 +39,7 @@ void SignalHandler(int signal)
  * @brief Register example services to the server
  * @param server Server instance
  */
-void RegisterExampleServices(miniserver::core::Server& server)
+void RegisterExampleServices(core::Server& server)
 {
     LOG_INFO("Main", "Registering example services");
 
@@ -108,7 +111,7 @@ int Main(int argc, char* argv[])
 {
     try
     {
-        miniserver::utils::Logger::GetInstance().SetLogLevel(miniserver::utils::LogLevel::Info);
+        utils::Logger::GetInstance().SetLogLevel(utils::LogLevel::Info);
         int port = 8080;
         if (argc > 1)
         {
@@ -132,7 +135,18 @@ int Main(int argc, char* argv[])
         signal(SIGINT, SignalHandler);
         signal(SIGTERM, SignalHandler);
 
-        g_server = std::make_unique<miniserver::core::Server>(port);
+        // Determine web root directory - check if current directory has web assets
+        std::string web_root;
+        if (std::filesystem::exists("./index.html"))
+        {
+            web_root = ".";
+        }
+        else if (std::filesystem::exists("./web"))
+        {
+            web_root = "./web";
+        }
+
+        g_server = std::make_unique<core::Server>(port, web_root);
         RegisterExampleServices(*g_server);
         g_server->Start();
 
